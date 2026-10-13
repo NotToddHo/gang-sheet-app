@@ -29,6 +29,8 @@ interface AssetSidebarProps {
   sheetId: string;
   onSheetChange: (id: string) => void;
   loading: boolean;
+  /** Progress text while loading, e.g. "Rendering a.pdf — page 2 of 9". */
+  loadingStatus: string | null;
   error: string | null;
   status: ArrangeStatus | null;
   onAddFiles: (files: File[]) => void;
@@ -55,6 +57,7 @@ export default function AssetSidebar({
   sheetId,
   onSheetChange,
   loading,
+  loadingStatus,
   error,
   status,
   onAddFiles,
@@ -125,13 +128,15 @@ export default function AssetSidebar({
           ) : (
             <ImagePlus className="h-6 w-6 text-zinc-400 dark:text-zinc-500" />
           )}
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">Drop PNGs here</span>
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">or click to browse</span>
+          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">Drop PNGs or PDFs here</span>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400" aria-live="polite">
+            {loading && loadingStatus ? loadingStatus : "or click to browse"}
+          </span>
         </button>
         <input
           ref={inputRef}
           type="file"
-          accept="image/png"
+          accept="image/png,.png,application/pdf,.pdf"
           multiple
           hidden
           onChange={(e) => {

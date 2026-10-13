@@ -10,6 +10,7 @@ import { exportSheetsZip } from "@/lib/exporter/exportZip";
 import { browserStorage, createExportQuota, EXPORT_QUOTA_STORAGE_KEY, type ExportQuota } from "@/lib/exportQuota";
 import type { SheetPlacement } from "@/lib/exporter/types";
 import { fitsOnSheet, packSheets, type MultiPackResult } from "@/lib/packing/rectPacker";
+import { describePdfError, isPdf, renderPdfPages } from "@/lib/pdf";
 import {
   DEFAULT_SHEET_PRESET,
   findSheetPreset,
@@ -51,7 +52,10 @@ export default function Workspace() {
   const setup = useMemo(() => sheetSetup(findSheetPreset(sheetId)), [sheetId]);
   const [assets, setAssets] = useState<SheetAsset[]>([]);
   const [layout, setLayout] = useState<Layout | null>(null);
-  const [loading, setLoading] = useState(false);
+  /** Number of uploads still being processed (drops can overlap). */
+  const [importsInFlight, setImportsInFlight] = useState(0);
+  /** Progress line shown under the drop zone, e.g. "Rendering a.pdf — page 2 of 9". */
+  const [importStatus, setImportStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** Assets whose most recent resize was rejected for being too large. */
   const [rejectedResizes, setRejectedResizes] = useState<ReadonlySet<string>>(new Set());
@@ -75,24 +79,63 @@ export default function Workspace() {
     return () => window.removeEventListener("storage", onStorage);
   }, [getQuota]);
 
-  // Revoke any remaining object URLs on unmount.
+  // On unmount: stop any PDF still rendering and revoke remaining object URLs.
   const assetsRef = useRef(assets);
   assetsRef.current = assets;
-  useEffect(() => () => assetsRef.current.forEach((a) => URL.revokeObjectURL(a.url)), []);
+  const importAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    // Created here, not in useRef(), so Strict Mode's mount→unmount→mount doesn't leave it aborted.
+    const controller = new AbortController();
+    importAbortRef.current = controller;
+    return () => {
+      controller.abort();
+      assetsRef.current.forEach((a) => URL.revokeObjectURL(a.url));
+    };
+  }, []);
 
   const addFiles = useCallback(async (files: File[]) => {
     const pngs = files.filter(isPng);
-    const rejected = files.length - pngs.length;
-    setError(rejected > 0 ? `Skipped ${rejected} non-PNG file${rejected === 1 ? "" : "s"}.` : null);
-    if (pngs.length === 0) return;
+    const pdfs = files.filter((f) => !isPng(f) && isPdf(f));
+    const skipped = files.length - pngs.length - pdfs.length;
+    const problems: string[] = [];
+    if (skipped > 0) problems.push(`Skipped ${skipped} unsupported file${skipped === 1 ? "" : "s"} (PNG and PDF only).`);
+    setError(problems.length ? problems.join(" ") : null);
+    if (pngs.length === 0 && pdfs.length === 0) return;
 
-    setLoading(true);
-    const results = await Promise.allSettled(pngs.map((f) => loadPngAsset(f)));
-    const loaded = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
-    const failed = results.length - loaded.length;
-    if (failed > 0) setError(`Couldn't read ${failed} file${failed === 1 ? "" : "s"}.`);
-    setAssets((prev) => [...prev, ...loaded]);
-    setLoading(false);
+    const signal = importAbortRef.current?.signal;
+    setImportsInFlight((n) => n + 1);
+    try {
+      if (pngs.length > 0) {
+        setImportStatus(`Loading ${pngs.length} PNG${pngs.length === 1 ? "" : "s"}…`);
+        const results = await Promise.allSettled(pngs.map((f) => loadPngAsset(f)));
+        const loaded = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+        const failed = results.length - loaded.length;
+        if (failed > 0) problems.push(`Couldn't read ${failed} PNG${failed === 1 ? "" : "s"}.`);
+        setAssets((prev) => [...prev, ...loaded]);
+      }
+
+      // PDFs one at a time, page by page; each page appears in the sidebar as soon as it's ready.
+      for (const pdf of pdfs) {
+        setImportStatus(`Opening ${pdf.name}…`);
+        try {
+          const pages = renderPdfPages(pdf, {
+            signal,
+            onPageStart: (n, total) => setImportStatus(`Rendering ${pdf.name} — page ${n} of ${total}`),
+          });
+          for await (const page of pages) {
+            const asset = await loadPngAsset(new File([page.png], page.name, { type: "image/png" }));
+            setAssets((prev) => [...prev, asset]);
+          }
+        } catch (err) {
+          if (signal?.aborted) return;
+          problems.push(describePdfError(pdf.name, err));
+        }
+      }
+    } finally {
+      setImportsInFlight((n) => n - 1);
+      setImportStatus(null);
+    }
+    if (problems.length > 0) setError(problems.join(" "));
   }, []);
 
   const resize = useCallback(
@@ -226,7 +269,8 @@ export default function Workspace() {
         sheetPresets={SHEET_PRESETS}
         sheetId={setup.preset.id}
         onSheetChange={changeSheet}
-        loading={loading}
+        loading={importsInFlight > 0}
+        loadingStatus={importStatus}
         error={error}
         status={status}
         onAddFiles={addFiles}
