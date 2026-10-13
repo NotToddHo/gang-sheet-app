@@ -7,6 +7,7 @@ import AssetSidebar, { type ArrangeStatus } from "@/components/Sidebar/AssetSide
 import { isImageFile, loadImageAsset, roundIn, type SheetAsset } from "@/lib/assets";
 import { downloadBlob, fileStamp } from "@/lib/exporter/download";
 import { exportSheetsZip } from "@/lib/exporter/exportZip";
+import { clampMarkInset, MARK_INSET_DEFAULT_IN } from "@/lib/exporter/registrationMarks";
 import { browserStorage, createExportQuota, EXPORT_QUOTA_STORAGE_KEY, type ExportQuota } from "@/lib/exportQuota";
 import type { SheetPlacement } from "@/lib/exporter/types";
 import { fitsOnSheet, packSheets, type MultiPackResult } from "@/lib/packing/rectPacker";
@@ -49,7 +50,9 @@ function packAssets(assets: readonly SheetAsset[], setup: SheetSetup): Layout {
 
 export default function Workspace() {
   const [sheetId, setSheetId] = useState(DEFAULT_SHEET_PRESET.id);
-  const setup = useMemo(() => sheetSetup(findSheetPreset(sheetId)), [sheetId]);
+  /** Registration mark inset (in). Smaller = marks nearer the edge = bigger printable area. */
+  const [markInset, setMarkInset] = useState(MARK_INSET_DEFAULT_IN);
+  const setup = useMemo(() => sheetSetup(findSheetPreset(sheetId), markInset), [sheetId, markInset]);
   const [assets, setAssets] = useState<SheetAsset[]>([]);
   const [layout, setLayout] = useState<Layout | null>(null);
   /** Number of uploads still being processed (drops can overlap). */
@@ -175,18 +178,34 @@ export default function Workspace() {
     setCurrentSheet(0);
   }, [assets, setup]);
 
-  // Switching paper re-packs immediately (if there's a layout) so the canvas never shows a stale size.
-  const changeSheet = useCallback(
-    (id: string) => {
-      const next = sheetSetup(findSheetPreset(id));
+  /**
+   * Applies a new sheet setup (paper or mark inset). Re-packs immediately if there's a layout:
+   * the printable area changed, and a larger inset moves marks inward onto placed artwork.
+   */
+  const applySetup = useCallback(
+    (next: SheetSetup) => {
       setSheetId(next.preset.id);
-      setRejectedResizes(new Set()); // a size rejected on the old sheet may fit this one; current sizes are re-checked
+      setMarkInset(next.markInset);
+      setRejectedResizes(new Set()); // a size rejected before may fit now; current sizes are re-checked
       if (layout) {
         setLayout(packAssets(assets, next));
         setCurrentSheet(0);
       }
     },
     [layout, assets],
+  );
+
+  const changeSheet = useCallback(
+    (id: string) => applySetup(sheetSetup(findSheetPreset(id), markInset)),
+    [applySetup, markInset],
+  );
+
+  const changeMarkInset = useCallback(
+    (insetIn: number) => {
+      const clamped = clampMarkInset(insetIn);
+      if (clamped !== markInset) applySetup(sheetSetup(findSheetPreset(sheetId), clamped));
+    },
+    [applySetup, sheetId, markInset],
   );
 
   /** Per-asset error: the current size is too large (e.g. a big upload), or the last resize was rejected. */
@@ -269,6 +288,8 @@ export default function Workspace() {
         sheetPresets={SHEET_PRESETS}
         sheetId={setup.preset.id}
         onSheetChange={changeSheet}
+        markInset={setup.markInset}
+        onMarkInsetChange={changeMarkInset}
         loading={importsInFlight > 0}
         loadingStatus={importStatus}
         error={error}
@@ -293,6 +314,7 @@ export default function Workspace() {
             sheetHeight={setup.sheet.height}
             safeMargin={setup.safeMargin}
             marks={setup.marks}
+            markInset={setup.markInset}
             placements={placements}
             label={sheets.length > 0 ? `Sheet ${sheetIndex + 1}` : undefined}
           />

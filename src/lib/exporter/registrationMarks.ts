@@ -20,6 +20,23 @@ export const SILHOUETTE_CAMEO: SilhouetteMarkPreset = {
   thicknessMm: 0.5,
 };
 
+/** User-adjustable mark inset (inches). Smaller insets push marks toward the edge and enlarge the printable area. */
+export const MARK_INSET_MIN_IN = 0.25;
+export const MARK_INSET_MAX_IN = 0.625;
+export const MARK_INSET_STEP_IN = 0.05;
+export const MARK_INSET_DEFAULT_IN = SILHOUETTE_CAMEO.insetIn;
+
+/** Clamps to the allowed range and trims float noise (0.30000000000000004 → 0.3). */
+export function clampMarkInset(insetIn: number): number {
+  if (!Number.isFinite(insetIn)) return MARK_INSET_DEFAULT_IN;
+  return Math.round(Math.min(MARK_INSET_MAX_IN, Math.max(MARK_INSET_MIN_IN, insetIn)) * 1000) / 1000;
+}
+
+/** The Silhouette Cameo marks at a custom inset (clamped to the allowed range). */
+export function silhouetteMarksAtInset(insetIn: number): SilhouetteMarkPreset {
+  return { ...SILHOUETTE_CAMEO, insetIn: clampMarkInset(insetIn) };
+}
+
 /** Registration marks as filled rectangles in 300 DPI sheet pixels. */
 export function silhouetteMarks(sheet: SheetSpec, preset: SilhouetteMarkPreset = SILHOUETTE_CAMEO): PxRect[] {
   const W = sheetPx(sheet.width);

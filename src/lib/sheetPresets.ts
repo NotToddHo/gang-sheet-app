@@ -1,4 +1,9 @@
-import { safeMarginIn, silhouetteMarks } from "@/lib/exporter/registrationMarks";
+import {
+  MARK_INSET_DEFAULT_IN,
+  safeMarginIn,
+  silhouetteMarks,
+  silhouetteMarksAtInset,
+} from "@/lib/exporter/registrationMarks";
 import type { PxRect, SheetSpec } from "@/lib/exporter/types";
 import { LETTER_HEIGHT_IN, LETTER_WIDTH_IN, usableArea, type PackOptions } from "@/lib/packing/rectPacker";
 
@@ -38,11 +43,16 @@ export function findSheetPreset(id: string): SheetPreset {
   return SHEET_PRESETS.find((p) => p.id === id) ?? DEFAULT_SHEET_PRESET;
 }
 
-/** Everything that depends on the paper size, derived together so packing, preview and export always agree. */
+/**
+ * Everything that depends on the paper size and mark inset, derived together so packing,
+ * preview and export always agree.
+ */
 export interface SheetSetup {
   preset: SheetPreset;
   sheet: SheetSpec;
   marks: PxRect[];
+  /** Distance from the sheet edge to the outer edge of the registration marks, in inches. */
+  markInset: number;
   /** Artwork is packed inside this margin so it (and its bleed) stays clear of the registration marks. */
   safeMargin: number;
   /** Shared by packing and the per-asset size check. */
@@ -51,14 +61,16 @@ export interface SheetSetup {
   printable: { width: number; height: number };
 }
 
-export function sheetSetup(preset: SheetPreset): SheetSetup {
+export function sheetSetup(preset: SheetPreset, markInsetIn = MARK_INSET_DEFAULT_IN): SheetSetup {
   const sheet = { width: preset.width, height: preset.height };
-  const safeMargin = safeMarginIn();
+  const markPreset = silhouetteMarksAtInset(markInsetIn);
+  const safeMargin = safeMarginIn(markPreset);
   const packOptions: PackOptions = { sheetWidth: sheet.width, sheetHeight: sheet.height, margin: safeMargin };
   return {
     preset,
     sheet,
-    marks: silhouetteMarks(sheet),
+    marks: silhouetteMarks(sheet, markPreset),
+    markInset: markPreset.insetIn,
     safeMargin,
     packOptions,
     printable: usableArea(packOptions),

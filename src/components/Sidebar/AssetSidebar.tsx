@@ -3,6 +3,7 @@
 import { useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 import { AlertTriangle, FileArchive, ImagePlus, LayoutGrid, Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import type { SheetAsset } from "@/lib/assets";
+import { MARK_INSET_MAX_IN, MARK_INSET_MIN_IN, MARK_INSET_STEP_IN } from "@/lib/exporter/registrationMarks";
 import { CUT_GAP_MM } from "@/lib/packing/rectPacker";
 import { presetSizeLabel, type SheetPreset } from "@/lib/sheetPresets";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -28,6 +29,9 @@ interface AssetSidebarProps {
   sheetPresets: readonly SheetPreset[];
   sheetId: string;
   onSheetChange: (id: string) => void;
+  /** Registration mark inset from the sheet edge, in inches. */
+  markInset: number;
+  onMarkInsetChange: (insetIn: number) => void;
   loading: boolean;
   /** Progress text while loading, e.g. "Rendering a.pdf — page 2 of 9". */
   loadingStatus: string | null;
@@ -56,6 +60,8 @@ export default function AssetSidebar({
   sheetPresets,
   sheetId,
   onSheetChange,
+  markInset,
+  onMarkInsetChange,
   loading,
   loadingStatus,
   error,
@@ -104,6 +110,27 @@ export default function AssetSidebar({
             </select>
           </label>
           <ThemeToggle className="h-9 w-9" />
+        </div>
+        <div className="mt-3">
+          <div className="flex items-baseline justify-between text-xs font-medium text-zinc-600 dark:text-zinc-400">
+            <label htmlFor="registration-inset">Registration Inset</label>
+            <span className="tabular-nums text-zinc-800 dark:text-zinc-200">{markInset.toFixed(2)} in</span>
+          </div>
+          <input
+            id="registration-inset"
+            type="range"
+            min={MARK_INSET_MIN_IN}
+            max={MARK_INSET_MAX_IN}
+            step={MARK_INSET_STEP_IN}
+            value={markInset}
+            onChange={(e) => onMarkInsetChange(Number(e.target.value))}
+            aria-describedby="registration-inset-hint"
+            aria-valuetext={`${markInset.toFixed(2)} inches`}
+            className="mt-1.5 w-full cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+          />
+          <p id="registration-inset-hint" className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+            Printable area {floor2(printable.width)} × {floor2(printable.height)} in · lower inset = more room
+          </p>
         </div>
       </header>
 

@@ -14,6 +14,8 @@ interface WorkspaceCanvasProps {
   safeMargin: number;
   /** Registration marks, in 300 DPI sheet px. */
   marks: readonly PxRect[];
+  /** Mark inset from the sheet edge, in inches (shown in the size badge). */
+  markInset: number;
   placements: readonly SheetPlacement[];
   /** Shown in the size badge, e.g. "Sheet 2". */
   label?: string;
@@ -22,7 +24,7 @@ interface WorkspaceCanvasProps {
 /** Screen pixels of breathing room around the sheet. */
 const VIEW_PADDING = 32;
 
-export default function WorkspaceCanvas({ sheetWidth, sheetHeight, safeMargin, marks, placements, label }: WorkspaceCanvasProps) {
+export default function WorkspaceCanvas({ sheetWidth, sheetHeight, safeMargin, marks, markInset, placements, label }: WorkspaceCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
 
@@ -106,7 +108,7 @@ export default function WorkspaceCanvas({ sheetWidth, sheetHeight, safeMargin, m
       )}
       <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-white/80 px-3 py-1 text-xs text-zinc-600 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900/80 dark:text-zinc-300 dark:ring-zinc-700">
         {label && `${label} · `}
-        {formatInches(sheetWidth)} × {formatInches(sheetHeight)} in · Silhouette marks
+        {formatInches(sheetWidth)} × {formatInches(sheetHeight)} in · marks {formatInches(markInset)} in
       </div>
     </div>
   );
