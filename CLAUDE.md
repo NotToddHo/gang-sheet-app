@@ -3,8 +3,8 @@
 - Architecture: 100% Client-Side. No expensive server rendering. The user's browser calculates layouts and exports files.
 - Critical Specs:
   - DPI: 300 DPI (1 inch = 300 px, 1 mm = 11.811 px).
-  - Cut Spacing: Strict 2.0 mm gap between cut vectors.
-  - Bleed: 1.5 mm outward bleed expansion.
+  - Cut Spacing: Strict 3.0 mm gap between cut vectors.
+  - Bleed: 1.5 mm outward bleed expansion (never more than half the cut gap, so neighbouring bleeds can't overlap).
   - Registration Marks: Silhouette Cameo (0.5-inch inset, top-left square, corner L-brackets) and Cricut presets.
   - Exports:
     1. Print File: 300 DPI raster (PNG/PDF) with artwork, bleed, and marks.

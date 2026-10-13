@@ -3,6 +3,7 @@
 import { useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 import { AlertTriangle, FileArchive, ImagePlus, LayoutGrid, Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import type { SheetAsset } from "@/lib/assets";
+import { CUT_GAP_MM } from "@/lib/packing/rectPacker";
 import { presetSizeLabel, type SheetPreset } from "@/lib/sheetPresets";
 import ThemeToggle from "@/components/ThemeToggle";
 import PaywallModal from "./PaywallModal";
@@ -83,7 +84,7 @@ export default function AssetSidebar({
     <aside className="flex h-full w-80 shrink-0 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
       <header className="border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
         <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Gang Sheet Builder</h1>
-        <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">300 DPI · 2 mm cut spacing · Silhouette marks</p>
+        <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">300 DPI · {CUT_GAP_MM} mm cut spacing · Silhouette marks</p>
         <div className="mt-3 flex items-end gap-2">
           <label className="block min-w-0 flex-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
             Sheet Size

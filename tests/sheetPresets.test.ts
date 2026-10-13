@@ -84,8 +84,8 @@ describe("sheet presets", () => {
     const onTabloid = packSheets(items, tabloid.packOptions).sheets.length;
     expect(onTabloid).toBeLessThan(onLetter);
 
-    expect(fitsOnSheet(9, 9, letter.packOptions)).toBe(false); // Letter printable ≈ 6.94 × 9.44 in
-    expect(fitsOnSheet(9, 9, tabloid.packOptions)).toBe(true); // Tabloid printable ≈ 9.44 × 15.44 in
+    expect(fitsOnSheet(9, 9, letter.packOptions)).toBe(false); // Letter printable ≈ 6.87 × 9.37 in
+    expect(fitsOnSheet(9, 9, tabloid.packOptions)).toBe(true); // Tabloid printable ≈ 9.37 × 15.37 in
     expect(fitsOnSheet(10, 22, mat24.packOptions)).toBe(true);
     expect(fitsOnSheet(10, 22, tabloid.packOptions)).toBe(false);
   });

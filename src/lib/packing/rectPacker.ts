@@ -5,7 +5,7 @@ export const DPI = 300;
 /** 1 mm = 11.811 px at 300 DPI. */
 export const PX_PER_MM = DPI / 25.4;
 /** Mandatory gap between cut vectors. */
-export const CUT_GAP_MM = 2.0;
+export const CUT_GAP_MM = 3.0;
 
 export const LETTER_WIDTH_IN = 8.5;
 export const LETTER_HEIGHT_IN = 11;
@@ -26,7 +26,7 @@ export interface PackOptions {
   sheetWidth?: number;
   /** Sheet height in inches. Default 11. */
   sheetHeight?: number;
-  /** Gap between items in mm. Clamped to a minimum of 2 mm. */
+  /** Gap between items in mm. Clamped to a minimum of CUT_GAP_MM. */
   gapMm?: number;
   /** Clear border around the sheet edge in inches (e.g. for registration marks). Default 0. */
   margin?: number;

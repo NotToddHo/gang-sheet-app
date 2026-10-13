@@ -2,7 +2,7 @@ import { DPI, PX_PER_MM, sheetPx } from "@/lib/packing/rectPacker";
 import { setPngDpi } from "./png";
 import type { PxRect, SheetPlacement, SheetSpec } from "./types";
 
-/** Target outward bleed past each cut line. */
+/** Outward bleed past each cut line. With the 3 mm cut gap this is applied in full. */
 export const BLEED_MM = 1.5;
 
 export interface PrintExportInput {
@@ -10,12 +10,16 @@ export interface PrintExportInput {
   placements: readonly SheetPlacement[];
   /** Registration marks, in sheet px. */
   marks: readonly PxRect[];
-  /** Gap between cut lines in px (from the pack result). Bleed is capped at half of it so neighbours never overprint. */
+  /** Gap between cut lines in px (from the pack result). Bleed never exceeds half of it, so neighbours can't overprint. */
   gapPx: number;
   bleedMm?: number;
 }
 
-/** Bleed actually applied, in px: the target bleed, capped so adjacent items' bleeds can't overlap. */
+/**
+ * Bleed actually applied, in px: the full BLEED_MM (18 px at 300 DPI), capped at half the
+ * cut gap so adjacent items' bleeds can't overlap. At the default 3 mm gap (36 px) the cap
+ * is also 18 px, so the full 1.5 mm is used; the cap only bites if the gap is ever narrowed.
+ */
 export function effectiveBleedPx(gapPx: number, bleedMm = BLEED_MM): number {
   return Math.min(Math.ceil(bleedMm * PX_PER_MM), Math.floor(gapPx / 2));
 }

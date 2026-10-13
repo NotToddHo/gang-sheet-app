@@ -5,7 +5,7 @@ import { BLEED_MM, effectiveBleedPx } from "@/lib/exporter/exportPrint";
 import { readPngDpi, setPngDpi } from "@/lib/exporter/png";
 import { safeMarginIn, silhouetteMarks } from "@/lib/exporter/registrationMarks";
 import type { PxRect } from "@/lib/exporter/types";
-import { DPI, PX_PER_MM, packRects } from "@/lib/packing/rectPacker";
+import { CUT_GAP_MM, DPI, PX_PER_MM, packRects } from "@/lib/packing/rectPacker";
 
 const LETTER = { width: 8.5, height: 11 };
 
@@ -127,14 +127,23 @@ describe("registration marks and safe area", () => {
 });
 
 describe("bleed", () => {
-  it("is capped at half the cut gap so neighbouring bleeds never overlap", () => {
-    const gapPx = Math.ceil(2 * PX_PER_MM);
-    const bleed = effectiveBleedPx(gapPx);
-    expect(bleed * 2).toBeLessThanOrEqual(gapPx);
-    expect(bleed).toBeLessThanOrEqual(Math.ceil(BLEED_MM * PX_PER_MM));
+  const fullBleedPx = Math.ceil(BLEED_MM * PX_PER_MM); // 18 px ≈ 1.52 mm
+  const defaultGapPx = packRects([]).gapPx; // 3 mm → 36 px
+
+  it("applies the full 1.5mm bleed at the default 3mm cut gap", () => {
+    expect(CUT_GAP_MM).toBe(3);
+    expect(BLEED_MM).toBe(1.5);
+    expect(defaultGapPx).toBe(36);
+    expect(effectiveBleedPx(defaultGapPx)).toBe(fullBleedPx);
+    expect(fullBleedPx / PX_PER_MM).toBeGreaterThanOrEqual(1.5);
   });
 
-  it("uses the full 1.5mm when the gap allows it", () => {
-    expect(effectiveBleedPx(Math.ceil(4 * PX_PER_MM))).toBe(Math.ceil(BLEED_MM * PX_PER_MM));
+  it("keeps neighbouring full bleeds from overlapping at the default gap", () => {
+    expect(effectiveBleedPx(defaultGapPx) * 2).toBeLessThanOrEqual(defaultGapPx);
+  });
+
+  it("still caps bleed at half the gap if the gap is ever narrower than two bleeds", () => {
+    const narrowGapPx = Math.ceil(2 * PX_PER_MM); // 24 px
+    expect(effectiveBleedPx(narrowGapPx)).toBe(12);
   });
 });

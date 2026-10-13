@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Check, Clock, X } from "lucide-react";
+import { CUT_GAP_MM } from "@/lib/packing/rectPacker";
 
 interface PaywallModalProps {
   open: boolean;
@@ -41,7 +42,7 @@ const PLANS: readonly Plan[] = [
 
 const FEATURES = [
   "Unlimited Print + Cut exports",
-  "Auto-arrange with exact 2 mm cut spacing",
+  `Auto-arrange with exact ${CUT_GAP_MM} mm cut spacing`,
   "Multi-sheet layouts bundled in one zip",
   "Letter, Tabloid, Super B and Cameo mat sizes",
 ];

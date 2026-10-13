@@ -30,7 +30,7 @@ function assertValidLayout(result: PackResult) {
 }
 
 describe("packRects", () => {
-  it("places every copy of a mixed batch with no overlap and >= 2mm gap", () => {
+  it("places every copy of a mixed batch with no overlap and >= CUT_GAP_MM gap", () => {
     const result = packRects([
       { id: "a", width: 2, height: 2, quantity: 6 },
       { id: "b", width: 3, height: 1.25, quantity: 4 },
@@ -43,16 +43,18 @@ describe("packRects", () => {
   });
 
   it("enforces the gap even when the sheet is packed to capacity", () => {
-    // 1in squares: 8 across would need 8in + 7 gaps = 8.55in, so 7 fit across; 10 fit down 11in.
+    // 1in squares with a 3mm gap: 8 across would need 8in + 7 gaps = 8.83in > 8.5in, so 7 fit;
+    // 10 down would need 10in + 9 gaps = 11.06in > 11in, so 9 fit. 7 × 9 = 63.
+    expect(CUT_GAP_MM).toBe(3);
     const result = packRects([{ width: 1, height: 1, quantity: 200 }]);
 
-    expect(result.placements.length).toBe(70);
-    expect(result.unplaced.length).toBe(130);
+    expect(result.placements.length).toBe(63);
+    expect(result.unplaced.length).toBe(137);
     assertValidLayout(result);
   });
 
   it("does not fit items that would only fit without the gap", () => {
-    // Two 4.25in-wide items fill 8.5in exactly — the 2mm gap forces one onto a new row.
+    // Two 4.25in-wide items fill 8.5in exactly — the cut gap forces one onto a new row.
     const result = packRects([{ width: 4.25, height: 5.4, quantity: 4 }], { allowRotation: false });
 
     expect(result.placements).toHaveLength(2);
@@ -77,7 +79,7 @@ describe("packRects", () => {
     expect(result.unplaced).toHaveLength(2);
   });
 
-  it("never uses a gap smaller than 2mm", () => {
+  it("never uses a gap smaller than CUT_GAP_MM, even if asked to", () => {
     const result = packRects([{ width: 1, height: 1, quantity: 20 }], { gapMm: 0.5 });
 
     expect(result.gapPx * MM_PER_PX).toBeGreaterThanOrEqual(CUT_GAP_MM);
