@@ -1,4 +1,4 @@
-import { DPI } from "@/lib/packing/rectPacker";
+import { DPI, sheetPx } from "@/lib/packing/rectPacker";
 import type { PxRect, SheetSpec } from "./types";
 
 const MM_PER_IN = 25.4;
@@ -13,8 +13,8 @@ const toMm = (px: number) => Math.round((px * MM_PER_IN * 10000) / DPI) / 10000;
  * same frame as the print PNG, so it aligns with the print without any resizing.
  */
 export function buildCutSvg(sheet: SheetSpec, cuts: readonly PxRect[]): string {
-  const widthMm = toMm(Math.round(sheet.width * DPI));
-  const heightMm = toMm(Math.round(sheet.height * DPI));
+  const widthMm = toMm(sheetPx(sheet.width));
+  const heightMm = toMm(sheetPx(sheet.height));
 
   const paths = cuts.map((r) => {
     const x0 = toMm(r.x);

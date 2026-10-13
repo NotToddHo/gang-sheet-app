@@ -77,6 +77,13 @@ interface TaggedBox extends Box2D {
   readonly hPx: number;
 }
 
+/**
+ * Sheet edge length in inches → whole 300 DPI pixels. Every consumer (packer, print PNG,
+ * cut SVG, marks, preview) uses this so they share one pixel frame, even for metric
+ * sheets like A4 whose 210 mm isn't a whole number of pixels.
+ */
+export const sheetPx = (inches: number) => Math.round(inches * DPI);
+
 /** Inches → px, rounded up so artwork is never clipped. */
 const inToPx = (inches: number) => Math.ceil(inches * DPI - 1e-9);
 
@@ -85,8 +92,8 @@ function sheetGeometry(options: PackOptions) {
   const sheetWidth = options.sheetWidth ?? LETTER_WIDTH_IN;
   const sheetHeight = options.sheetHeight ?? LETTER_HEIGHT_IN;
   const gapMm = Math.max(options.gapMm ?? CUT_GAP_MM, CUT_GAP_MM);
-  const sheetWPx = Math.round(sheetWidth * DPI);
-  const sheetHPx = Math.round(sheetHeight * DPI);
+  const sheetWPx = sheetPx(sheetWidth);
+  const sheetHPx = sheetPx(sheetHeight);
   const marginPx = inToPx(options.margin ?? 0);
   return {
     sheetWidth,

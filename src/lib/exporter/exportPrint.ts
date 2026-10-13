@@ -1,4 +1,4 @@
-import { DPI, PX_PER_MM } from "@/lib/packing/rectPacker";
+import { DPI, PX_PER_MM, sheetPx } from "@/lib/packing/rectPacker";
 import { setPngDpi } from "./png";
 import type { PxRect, SheetPlacement, SheetSpec } from "./types";
 
@@ -22,13 +22,13 @@ export function effectiveBleedPx(gapPx: number, bleedMm = BLEED_MM): number {
 
 /**
  * Renders the print file at 300 DPI: white sheet, artwork with edge-extended bleed,
- * and registration marks. The canvas is exactly sheet.width × sheet.height inches
- * at 300 DPI, with (0, 0) at the sheet's top-left, matching the cut SVG.
+ * and registration marks. The canvas is the sheet size at 300 DPI (rounded to whole
+ * pixels by sheetPx), with (0, 0) at the sheet's top-left, matching the cut SVG.
  */
 export async function renderPrintPng({ sheet, placements, marks, gapPx, bleedMm }: PrintExportInput): Promise<Blob> {
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(sheet.width * DPI);
-  canvas.height = Math.round(sheet.height * DPI);
+  canvas.width = sheetPx(sheet.width);
+  canvas.height = sheetPx(sheet.height);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context unavailable");
 

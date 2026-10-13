@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Group, Image as KonvaImage, Layer, Rect, Stage } from "react-konva";
 import type { PxRect, SheetPlacement } from "@/lib/exporter/types";
-import { DPI } from "@/lib/packing/rectPacker";
+import { DPI, sheetPx } from "@/lib/packing/rectPacker";
+import { formatInches } from "@/lib/sheetPresets";
 
 interface WorkspaceCanvasProps {
   /** Inches. */
@@ -37,8 +38,8 @@ export default function WorkspaceCanvas({ sheetWidth, sheetHeight, safeMargin, m
   }, []);
 
   // Everything inside the sheet group is drawn in 300 DPI sheet pixels, then scaled to fit the view.
-  const sheetW = sheetWidth * DPI;
-  const sheetH = sheetHeight * DPI;
+  const sheetW = sheetPx(sheetWidth);
+  const sheetH = sheetPx(sheetHeight);
   const safePx = safeMargin * DPI;
   const scale = Math.max(
     0,
@@ -48,7 +49,7 @@ export default function WorkspaceCanvas({ sheetWidth, sheetHeight, safeMargin, m
   const offsetY = (size.height - sheetH * scale) / 2;
 
   return (
-    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+    <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-zinc-100 dark:bg-zinc-950">
       {size.width > 0 && size.height > 0 && (
         <Stage width={size.width} height={size.height}>
           <Layer listening={false}>
@@ -103,9 +104,9 @@ export default function WorkspaceCanvas({ sheetWidth, sheetHeight, safeMargin, m
           </Layer>
         </Stage>
       )}
-      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-white/80 px-3 py-1 text-xs text-zinc-600 shadow-sm ring-1 ring-zinc-200">
+      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-white/80 px-3 py-1 text-xs text-zinc-600 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900/80 dark:text-zinc-300 dark:ring-zinc-700">
         {label && `${label} · `}
-        {sheetWidth} × {sheetHeight} in · Silhouette marks
+        {formatInches(sheetWidth)} × {formatInches(sheetHeight)} in · Silhouette marks
       </div>
     </div>
   );

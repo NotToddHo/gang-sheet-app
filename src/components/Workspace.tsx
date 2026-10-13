@@ -21,7 +21,7 @@ import {
 // Konva needs the DOM, so the canvas is client-only.
 const WorkspaceCanvas = dynamic(() => import("@/components/Canvas/WorkspaceCanvas"), {
   ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse bg-zinc-100" />,
+  loading: () => <div className="h-full w-full animate-pulse bg-zinc-100 dark:bg-zinc-950" />,
 });
 
 const OVERSIZE_ERROR = "Image exceeds printable area. Reduce size or select a larger sheet.";
@@ -218,7 +218,7 @@ export default function Workspace() {
   }, [layout, sheets, canExport, setup, getQuota]);
 
   return (
-    <div className="flex h-screen w-full bg-zinc-100 text-zinc-900">
+    <div className="flex h-screen w-full bg-zinc-100 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <AssetSidebar
         assets={assets}
         assetErrors={assetErrors}

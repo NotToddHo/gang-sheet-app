@@ -20,14 +20,14 @@ export default function SheetPager({ count, current, itemCounts, onChange }: She
   return (
     <nav
       aria-label="Sheets"
-      className="flex shrink-0 items-center justify-center gap-2 border-t border-zinc-200 bg-white px-4 py-2.5"
+      className="flex shrink-0 items-center justify-center gap-2 border-t border-zinc-200 bg-white px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-900"
     >
       <button
         type="button"
         onClick={() => go(current - 1)}
         disabled={current === 0}
         aria-label="Previous sheet"
-        className="rounded-md p-1.5 text-zinc-600 hover:bg-zinc-100 disabled:opacity-30"
+        className="rounded-md p-1.5 text-zinc-600 hover:bg-zinc-100 disabled:opacity-30 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
@@ -42,7 +42,9 @@ export default function SheetPager({ count, current, itemCounts, onChange }: She
               aria-current={i === current ? "page" : undefined}
               title={`Sheet ${i + 1} · ${itemCounts[i] ?? 0} items`}
               className={`min-w-8 rounded-md px-2 py-1 text-xs font-medium ${
-                i === current ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+                i === current
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                  : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
               }`}
             >
               Sheet {i + 1}
@@ -50,7 +52,7 @@ export default function SheetPager({ count, current, itemCounts, onChange }: She
           ))}
         </div>
       ) : (
-        <span className="min-w-28 text-center text-xs font-medium text-zinc-700" aria-live="polite">
+        <span className="min-w-28 text-center text-xs font-medium text-zinc-700 dark:text-zinc-200" aria-live="polite">
           Sheet {current + 1} of {count}
         </span>
       )}
@@ -60,7 +62,7 @@ export default function SheetPager({ count, current, itemCounts, onChange }: She
         onClick={() => go(current + 1)}
         disabled={current === count - 1}
         aria-label="Next sheet"
-        className="rounded-md p-1.5 text-zinc-600 hover:bg-zinc-100 disabled:opacity-30"
+        className="rounded-md p-1.5 text-zinc-600 hover:bg-zinc-100 disabled:opacity-30 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
         <ChevronRight className="h-4 w-4" />
       </button>

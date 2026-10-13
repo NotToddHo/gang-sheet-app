@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildCutSvg } from "@/lib/exporter/exportCut";
 import { DPI, fitsOnSheet, packSheets } from "@/lib/packing/rectPacker";
-import { findSheetPreset, SHEET_PRESETS, sheetSetup } from "@/lib/sheetPresets";
+import { findSheetPreset, presetSizeLabel, SHEET_PRESETS, sheetSetup } from "@/lib/sheetPresets";
 
 const intersects = (
   a: { x: number; y: number; width: number; height: number },
@@ -9,14 +9,26 @@ const intersects = (
 ) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
 describe("sheet presets", () => {
-  it("offers the five requested sizes", () => {
-    expect(SHEET_PRESETS.map((p) => [p.label, p.width, p.height])).toEqual([
-      ["US Letter", 8.5, 11],
-      ["Tabloid", 11, 17],
-      ["Super B / A3+", 13, 19],
-      ["Cameo 12x12 Mat", 12, 12],
-      ["Cameo 12x24 Mat", 12, 24],
+  it("offers the seven sizes, labelled in inches", () => {
+    expect(SHEET_PRESETS.map((p) => `${p.label} (${presetSizeLabel(p)})`)).toEqual([
+      "US Letter (8.5 x 11 in)",
+      "A4 (8.27 x 11.69 in)",
+      "Tabloid (11 x 17 in)",
+      "A3 (11.69 x 16.54 in)",
+      "Super B / A3+ (13 x 19 in)",
+      "Cameo 12x12 Mat (12 x 12 in)",
+      "Cameo 12x24 Mat (12 x 24 in)",
     ]);
+  });
+
+  it("defines A4 and A3 at their exact ISO millimetre sizes", () => {
+    const toMm = (inches: number) => inches * 25.4;
+    const a4 = findSheetPreset("a4");
+    const a3 = findSheetPreset("a3");
+    expect(toMm(a4.width)).toBeCloseTo(210, 9);
+    expect(toMm(a4.height)).toBeCloseTo(297, 9);
+    expect(toMm(a3.width)).toBeCloseTo(297, 9);
+    expect(toMm(a3.height)).toBeCloseTo(420, 9);
   });
 
   it("falls back to Letter for an unknown id", () => {
@@ -26,8 +38,9 @@ describe("sheet presets", () => {
   it.each(SHEET_PRESETS)("$label: packs inside the sheet, clear of the marks", (preset) => {
     const setup = sheetSetup(preset);
     const result = packSheets([{ width: 1.5, height: 1, quantity: 400 }], setup.packOptions);
-    const W = preset.width * DPI;
-    const H = preset.height * DPI;
+    // Metric sheets aren't whole pixels at 300 DPI (A4 = 2480.3 px), so the frame is rounded.
+    const W = Math.round(preset.width * DPI);
+    const H = Math.round(preset.height * DPI);
 
     expect(result.sheet.widthPx).toBe(W);
     expect(result.sheet.heightPx).toBe(H);
@@ -35,6 +48,10 @@ describe("sheet presets", () => {
       expect(m.x + m.width).toBeLessThanOrEqual(W);
       expect(m.y + m.height).toBeLessThanOrEqual(H);
     }
+    // Marks are inset from the same rounded frame the PNG is drawn on: the top-right
+    // L-bracket's outer edge sits exactly 0.5 in from the right edge.
+    const rightmost = Math.max(...setup.marks.map((m) => m.x + m.width));
+    expect(rightmost).toBeCloseTo(W - 0.5 * DPI, 9);
     for (const sheet of result.sheets) {
       for (const p of sheet.placements) {
         expect(p.px.x + p.px.width).toBeLessThanOrEqual(W);
@@ -44,10 +61,17 @@ describe("sheet presets", () => {
     }
   });
 
-  it.each(SHEET_PRESETS)("$label: cut SVG is the sheet size in mm", (preset) => {
+  it.each(SHEET_PRESETS)("$label: cut SVG matches the print PNG frame and the paper size", (preset) => {
     const svg = buildCutSvg(sheetSetup(preset).sheet, []);
-    expect(svg).toContain(`width="${+(preset.width * 25.4).toFixed(4)}mm"`);
-    expect(svg).toContain(`height="${+(preset.height * 25.4).toFixed(4)}mm"`);
+    const [, wMm, hMm] = svg.match(/width="([\d.]+)mm" height="([\d.]+)mm"/)!.map(Number);
+
+    // Exactly the print PNG's pixel frame (what matters for print/cut alignment)...
+    expect((wMm / 25.4) * DPI).toBeCloseTo(Math.round(preset.width * DPI), 3);
+    expect((hMm / 25.4) * DPI).toBeCloseTo(Math.round(preset.height * DPI), 3);
+    // ...and within half a pixel (0.05 mm) of the nominal paper size.
+    expect(Math.abs(wMm - preset.width * 25.4)).toBeLessThan(0.05);
+    expect(Math.abs(hMm - preset.height * 25.4)).toBeLessThan(0.05);
+    expect(svg).toContain(`viewBox="0 0 ${wMm} ${hMm}"`);
   });
 
   it("bigger paper fits more per sheet and accepts items Letter rejects", () => {

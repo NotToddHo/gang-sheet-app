@@ -1,4 +1,4 @@
-import { CUT_GAP_MM, DPI, PX_PER_MM } from "@/lib/packing/rectPacker";
+import { CUT_GAP_MM, DPI, PX_PER_MM, sheetPx } from "@/lib/packing/rectPacker";
 import type { PxRect, SheetSpec } from "./types";
 
 export interface SilhouetteMarkPreset {
@@ -22,8 +22,8 @@ export const SILHOUETTE_CAMEO: SilhouetteMarkPreset = {
 
 /** Registration marks as filled rectangles in 300 DPI sheet pixels. */
 export function silhouetteMarks(sheet: SheetSpec, preset: SilhouetteMarkPreset = SILHOUETTE_CAMEO): PxRect[] {
-  const W = sheet.width * DPI;
-  const H = sheet.height * DPI;
+  const W = sheetPx(sheet.width);
+  const H = sheetPx(sheet.height);
   const inset = preset.insetIn * DPI;
   const sq = preset.squareMm * PX_PER_MM;
   const len = preset.lengthMm * PX_PER_MM;
