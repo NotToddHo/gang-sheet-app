@@ -1,4 +1,5 @@
 import { readPngDpi } from "@/lib/exporter/png";
+import { readJpegDpi } from "@/lib/jpeg";
 import { DPI } from "@/lib/packing/rectPacker";
 
 export interface SheetAsset {
@@ -16,21 +17,31 @@ export interface SheetAsset {
   quantity: number;
 }
 
-export function isPng(file: File): boolean {
-  return file.type === "image/png" || file.name.toLowerCase().endsWith(".png");
+const IMAGE_TYPES = new Set(["image/png", "image/jpeg"]);
+const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg"];
+
+/** PNG or JPEG, by MIME type or (for drops that arrive without one) by extension. */
+export function isImageFile(file: File): boolean {
+  const name = file.name.toLowerCase();
+  return IMAGE_TYPES.has(file.type) || IMAGE_EXTENSIONS.some((ext) => name.endsWith(ext));
+}
+
+/** Embedded print DPI of a PNG (pHYs) or JPEG (JFIF/EXIF), detected from the bytes, or null. */
+export function readImageDpi(bytes: Uint8Array): number | null {
+  return readPngDpi(bytes) ?? readJpegDpi(bytes);
 }
 
 /**
- * Loads a PNG at its true print size: pixels ÷ its embedded DPI (300 DPI if none).
+ * Loads a PNG or JPEG at its true print size: pixels ÷ its embedded DPI (300 DPI if none).
  * It is never resized here, even when it's larger than the sheet; callers flag that.
  */
-export async function loadPngAsset(file: File): Promise<SheetAsset> {
+export async function loadImageAsset(file: File): Promise<SheetAsset> {
   const url = URL.createObjectURL(file);
   try {
     const image = new Image();
     image.src = url;
     const [bytes] = await Promise.all([file.arrayBuffer(), image.decode()]);
-    const dpi = readPngDpi(new Uint8Array(bytes));
+    const dpi = readImageDpi(new Uint8Array(bytes));
 
     const pxWidth = image.naturalWidth;
     const pxHeight = image.naturalHeight;

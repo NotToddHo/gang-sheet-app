@@ -128,7 +128,7 @@ export default function AssetSidebar({
           ) : (
             <ImagePlus className="h-6 w-6 text-zinc-400 dark:text-zinc-500" />
           )}
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">Drop PNGs or PDFs here</span>
+          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">Drop PNG, JPG or PDF files here</span>
           <span className="text-xs text-zinc-500 dark:text-zinc-400" aria-live="polite">
             {loading && loadingStatus ? loadingStatus : "or click to browse"}
           </span>
@@ -136,7 +136,7 @@ export default function AssetSidebar({
         <input
           ref={inputRef}
           type="file"
-          accept="image/png,.png,application/pdf,.pdf"
+          accept="image/png,.png,image/jpeg,.jpg,.jpeg,application/pdf,.pdf"
           multiple
           hidden
           onChange={(e) => {

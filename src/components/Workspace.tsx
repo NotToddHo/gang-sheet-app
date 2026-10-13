@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SheetPager from "@/components/Canvas/SheetPager";
 import AssetSidebar, { type ArrangeStatus } from "@/components/Sidebar/AssetSidebar";
-import { isPng, loadPngAsset, roundIn, type SheetAsset } from "@/lib/assets";
+import { isImageFile, loadImageAsset, roundIn, type SheetAsset } from "@/lib/assets";
 import { downloadBlob, fileStamp } from "@/lib/exporter/download";
 import { exportSheetsZip } from "@/lib/exporter/exportZip";
 import { browserStorage, createExportQuota, EXPORT_QUOTA_STORAGE_KEY, type ExportQuota } from "@/lib/exportQuota";
@@ -94,23 +94,23 @@ export default function Workspace() {
   }, []);
 
   const addFiles = useCallback(async (files: File[]) => {
-    const pngs = files.filter(isPng);
-    const pdfs = files.filter((f) => !isPng(f) && isPdf(f));
-    const skipped = files.length - pngs.length - pdfs.length;
+    const images = files.filter(isImageFile);
+    const pdfs = files.filter((f) => !isImageFile(f) && isPdf(f));
+    const skipped = files.length - images.length - pdfs.length;
     const problems: string[] = [];
-    if (skipped > 0) problems.push(`Skipped ${skipped} unsupported file${skipped === 1 ? "" : "s"} (PNG and PDF only).`);
+    if (skipped > 0) problems.push(`Skipped ${skipped} unsupported file${skipped === 1 ? "" : "s"} (PNG, JPG and PDF only).`);
     setError(problems.length ? problems.join(" ") : null);
-    if (pngs.length === 0 && pdfs.length === 0) return;
+    if (images.length === 0 && pdfs.length === 0) return;
 
     const signal = importAbortRef.current?.signal;
     setImportsInFlight((n) => n + 1);
     try {
-      if (pngs.length > 0) {
-        setImportStatus(`Loading ${pngs.length} PNG${pngs.length === 1 ? "" : "s"}…`);
-        const results = await Promise.allSettled(pngs.map((f) => loadPngAsset(f)));
+      if (images.length > 0) {
+        setImportStatus(`Loading ${images.length} image${images.length === 1 ? "" : "s"}…`);
+        const results = await Promise.allSettled(images.map((f) => loadImageAsset(f)));
         const loaded = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
         const failed = results.length - loaded.length;
-        if (failed > 0) problems.push(`Couldn't read ${failed} PNG${failed === 1 ? "" : "s"}.`);
+        if (failed > 0) problems.push(`Couldn't read ${failed} image${failed === 1 ? "" : "s"}.`);
         setAssets((prev) => [...prev, ...loaded]);
       }
 
@@ -123,7 +123,7 @@ export default function Workspace() {
             onPageStart: (n, total) => setImportStatus(`Rendering ${pdf.name} — page ${n} of ${total}`),
           });
           for await (const page of pages) {
-            const asset = await loadPngAsset(new File([page.png], page.name, { type: "image/png" }));
+            const asset = await loadImageAsset(new File([page.png], page.name, { type: "image/png" }));
             setAssets((prev) => [...prev, asset]);
           }
         } catch (err) {
